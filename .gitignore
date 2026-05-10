@@ -4,5 +4,5 @@ node_modules
 # /configs/*.env*
 # Ignore uploads folder
 /uploads/
-
+/AssetTracker
 /generated/prisma

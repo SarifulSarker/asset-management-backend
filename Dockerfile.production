@@ -1,31 +1,24 @@
-FROM node:20.11.1 as build
+FROM node:20 as build
 
 ENV TZ=Asia/Dhaka
-
 WORKDIR /app
 
 COPY package*.json .
-
 RUN npm install
 
 COPY . .
 
-RUN npm run migrate:prod
-
 RUN npm run prisma:generate
-
 RUN npm run build
 
 
-
-FROM node:20.11.1 as deployment
+FROM node:20
 
 WORKDIR /app
 
 COPY package*.json .
-
 RUN npm install
 
 COPY --from=build /app .
 
-CMD npm run prod
+CMD ["npm", "run", "production"]
