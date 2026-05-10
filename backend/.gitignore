@@ -1,7 +1,7 @@
 node_modules
 # Keep environment variables out of version control
 # Ignore all .env files in configs folder
-/configs/*.env*
+# /configs/*.env*
 # Ignore uploads folder
 /uploads/
 

@@ -32,8 +32,8 @@ model Roles {
   id   Int    @id @default(autoincrement())
   role String @unique
 
-  permissionId Int
-  permission   Permissions @relation(fields: [permissionId], references: [id])
+  permissionId Int?
+  permission   Permissions? @relation(fields: [permissionId], references: [id])
 
   user User[]
 
@@ -224,7 +224,7 @@ model AssetUnit {
   status        UnitStatus @default(IN_STOCK)
   images        String[]
 
-  assigned      Boolean    @default(false) 
+  assigned Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -251,7 +251,7 @@ model AssetAssingmentEmployee {
   assignedAt   DateTime  @default(now())
   unassignedAt DateTime?
 
-  is_active    Boolean   @default(true)
+  is_active Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

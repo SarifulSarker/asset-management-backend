@@ -37,7 +37,7 @@ class AuthMiddleware {
       // 4. Attach user info to request
       req.user = {
         id: decoded.userId,
-        // superAdmin: decoded.userId == 36 ? true : false,
+        
         ...decoded,
       };
 
