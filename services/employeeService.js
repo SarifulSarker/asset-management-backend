@@ -1,0 +1,199 @@
+import { PrismaClient } from "@prisma/client";
+import { SuccessResponse, ErrorResponse } from "../utils/return.js";
+import { generateUID } from "../utils/uuid.js";
+const prisma = new PrismaClient();
+
+class EmployeeService {
+  // CREATE
+  async createEmployee(data) {
+    try {
+      const {
+        fullName,
+        email,
+        phone,
+        departmentId,
+        designationId,
+        status,
+        is_active,
+      } = data;
+
+      // check existing employee
+      const exists = await prisma.employee.findUnique({
+        where: { email },
+      });
+
+      if (exists) {
+        return ErrorResponse(400, "Employee already exists");
+      }
+
+      const employee = await prisma.employee.create({
+        data: {
+          fullName,
+          uid: await generateUID(10),
+          email,
+          phone,
+          status: status || "active",
+          is_active: is_active ?? true,
+          departmentId: departmentId ? Number(departmentId) : null,
+          designationId: designationId ? Number(designationId) : null,
+        },
+        include: {
+          department: true,
+          designation: true,
+        },
+      });
+
+      return SuccessResponse(201, "Employee created successfully", employee);
+    } catch (err) {
+      return ErrorResponse(500, err.message || "Server Error");
+    }
+  }
+
+  // LIST WITH PAGINATION + SEARCH
+  async getEmployees({ page, perpage, search, status }) {
+    try {
+      if (!page || !perpage) {
+        return ErrorResponse(400, "Page and perpage are required");
+      }
+
+      let where = {};
+
+      // 🔍 Search by terms
+      if (search) {
+        const terms = search.trim().split(/\s+/);
+        where = {
+          AND: terms.map((term) => ({
+            OR: [
+              { fullName: { contains: term, mode: "insensitive" } },
+              { email: { contains: term, mode: "insensitive" } },
+              { phone: { contains: term, mode: "insensitive" } },
+             
+            ],
+          })),
+        };
+      }
+
+      // ✅ Status filter
+      if (status !== undefined) {
+        where.is_active = status; // filter by active/inactive
+      } else {
+        where.is_active = true; // default: active
+      }
+
+      const total = await prisma.employee.count({ where });
+
+      const employees = await prisma.employee.findMany({
+        where,
+        include: { department: true, designation: true },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * perpage,
+        take: perpage,
+      });
+
+      return SuccessResponse(200, "Employees fetched successfully", {
+        employees,
+        total,
+        page,
+        perpage,
+      });
+    } catch (err) {
+      console.error(err);
+      return ErrorResponse(500, err.message || "Server Error");
+    }
+  }
+
+  // GET BY ID
+  async getEmployeeById(uid) {
+    try {
+      const employee = await prisma.employee.findUnique({
+        where: { uid: uid },
+        include: {
+          department: true,
+          designation: true,
+        },
+      });
+
+      if (!employee) {
+        return ErrorResponse(404, "Employee not found");
+      }
+
+      return SuccessResponse(200, "Employee fetched successfully", employee);
+    } catch (err) {
+      return ErrorResponse(500, err.message || "Server Error");
+    }
+  }
+
+  // UPDATE
+  async updateEmployee(id, data) {
+    try {
+      const exists = await prisma.employee.findUnique({
+        where: { id: Number(id) },
+      });
+
+      if (!exists) {
+        return ErrorResponse(404, "Employee not found");
+      }
+
+      const updatedEmployee = await prisma.employee.update({
+        where: { id: Number(id) },
+        data: {
+          fullName: data.fullName,
+          phone: data.phone,
+          status: data.status,
+          is_active: data.is_active,
+          departmentId: data.departmentId ? Number(data.departmentId) : null,
+          designationId: data.designationId ? Number(data.designationId) : null,
+        },
+        include: {
+          department: true,
+          designation: true,
+        },
+      });
+
+      return SuccessResponse(
+        200,
+        "Employee updated successfully",
+        updatedEmployee
+      );
+    } catch (err) {
+      return ErrorResponse(500, err.message || "Server Error");
+    }
+  }
+
+  // DELETE
+  async deleteEmployee(uid) {
+    try {
+      if (!uid) {
+        return ErrorResponse(400, "Employee UID is required");
+      }
+
+      const employee = await prisma.employee.findUnique({
+        where: { uid },
+        select: { is_active: true },
+      });
+
+      if (!employee) {
+        return ErrorResponse(404, "Employee not found");
+      }
+
+      const updatedEmployee = await prisma.employee.update({
+        where: { uid },
+        data: {
+          is_active: !employee.is_active,
+        },
+      });
+
+      return SuccessResponse(
+        200,
+        `Employee ${
+          updatedEmployee.is_active ? "activated" : "deactivated"
+        } successfully`,
+        updatedEmployee
+      );
+    } catch (err) {
+      return ErrorResponse(500, err.message || "Server Error");
+    }
+  }
+}
+
+export default new EmployeeService();

@@ -1,0 +1,304 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id  Int    @id @default(autoincrement())
+  uid String @unique
+
+  roleId   Int? // <-- question mark মানে nullable
+  roleInfo Roles? @relation(fields: [roleId], references: [id])
+
+  firstName String
+  lastName  String
+  email     String  @unique
+  password  String
+  phone     String  @unique
+  token     String  @default("")
+  is_active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user")
+}
+
+model Roles {
+  id   Int    @id @default(autoincrement())
+  role String @unique
+
+  permissionId Int?
+  permission   Permissions? @relation(fields: [permissionId], references: [id])
+
+  user User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("roles")
+}
+
+model Permissions {
+  id Int @id @default(autoincrement())
+
+  modules Json // 👈 full permission config here
+
+  roles Roles[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("permissions")
+}
+
+// -------------------- DEPARTMENT --------------------
+model Department {
+  id  Int    @id @default(autoincrement())
+  uid String @unique
+
+  name      String  @unique
+  is_active Boolean @default(true)
+
+  employees                  Employee[]
+  assetAssingmentDepartments AssetAssingmentDepartment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("department")
+}
+
+// -------------------- EMPLOYEE --------------------
+model Employee {
+  id  Int    @id @default(autoincrement())
+  uid String @unique
+
+  fullName String
+  email    String  @unique
+  phone    String?
+  status   String  @default("active")
+
+  departmentId Int?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  designationId Int?
+  designation   Designation? @relation(fields: [designationId], references: [id])
+
+  is_active Boolean @default(true)
+
+  assetAssingmentEmployees AssetAssingmentEmployee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("employees")
+}
+
+model Designation {
+  id  Int    @id @default(autoincrement())
+  uid String @unique
+
+  name        String
+  description String?
+  is_active   Boolean @default(true)
+
+  employees Employee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("designations")
+}
+
+// -------------------- VENDOR --------------------
+model Vendor {
+  id  Int    @id @default(autoincrement())
+  uid String @unique
+
+  name    String
+  contact String?
+  email   String?
+  address String?
+
+  notes     String?
+  is_active Boolean @default(true)
+
+  Assets Asset[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("vendor")
+}
+
+// -------------------- BRAND --------------------
+model Brand {
+  id  Int    @id @default(autoincrement())
+  uid String @unique
+
+  name      String  @unique
+  logo      String?
+  is_active Boolean @default(true)
+
+  assets Asset[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("brand")
+}
+
+model Category {
+  id  Int    @id @default(autoincrement())
+  uid String @unique
+
+  name String
+
+  parentId Int?
+  parent   Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children Category[] @relation("SubCategories")
+
+  is_active Boolean @default(true)
+
+  assetsAsCategory    Asset[] @relation("CategoryAssets")
+  assetsAsSubCategory Asset[] @relation("SubCategoryAssets")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, parentId])
+  @@map("category")
+}
+
+model Asset {
+  id  Int    @id @default(autoincrement())
+  uid String @unique
+
+  name String @unique
+
+  brandId Int?
+  brand   Brand? @relation(fields: [brandId], references: [id])
+
+  specs String?
+
+  notes        String?
+  purchaseDate DateTime?
+
+  // 🆕 total quantity of units
+  units Int @default(0)
+
+  categoryId Int?
+  category   Category? @relation("CategoryAssets", fields: [categoryId], references: [id])
+
+  subCategoryId Int?
+  subCategory   Category? @relation("SubCategoryAssets", fields: [subCategoryId], references: [id])
+
+  vendorId  Int?
+  vendor    Vendor? @relation(fields: [vendorId], references: [id])
+  is_active Boolean @default(true)
+
+  assetUnits AssetUnit[]
+
+  assetAssingmentEmployees   AssetAssingmentEmployee[]
+  assetAssingmentDepartments AssetAssingmentDepartment[]
+  assetLogs                  AssetLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("assets")
+}
+
+model AssetUnit {
+  id Int @id @default(autoincrement())
+
+  assetId       Int
+  asset         Asset      @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  purchasePrice Float?
+  productId     String     @unique
+  status        UnitStatus @default(IN_STOCK)
+  images        String[]
+
+  assigned Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assetAssingmentEmployees AssetAssingmentEmployee[]
+
+  @@unique([id, assetId])
+  @@map("asset_units")
+}
+
+// -------------------- ASSET ASSIGNMENT EMPLOYEE --------------------
+model AssetAssingmentEmployee {
+  id Int @id @default(autoincrement())
+
+  assetId Int
+  asset   Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  assetUnitId Int
+  assetUnit   AssetUnit @relation(fields: [assetUnitId, assetId], references: [id, assetId])
+
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  assignedAt   DateTime  @default(now())
+  unassignedAt DateTime?
+
+  is_active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("asset_assingment_employee")
+}
+
+model AssetLog {
+  id          Int     @id @default(autoincrement())
+  asset_id    Int
+  asset_uid   String
+  context     String // CREATE | UPDATE | ASSIGN | UNASSIGN | etc
+  description String
+  issuer      String? // user / admin / system
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  asset Asset @relation(fields: [asset_id], references: [id])
+
+  @@index([asset_id])
+  @@map("asset_log")
+}
+
+// -------------------- ASSET ASSIGNMENT DEPARTMENT --------------------
+
+model AssetAssingmentDepartment {
+  id Int @id @default(autoincrement())
+
+  assetId      Int
+  departmentId Int
+
+  asset      Asset      @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([assetId, departmentId])
+  @@map("asset_assingment_department")
+}
+
+enum UnitStatus {
+  IN_STOCK
+  IN_USE
+  SOLD
+  DAMAGED
+  LOST
+  MAINTENANCE
+}
