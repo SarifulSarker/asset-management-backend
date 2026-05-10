@@ -68,6 +68,7 @@ class AssetService {
           vendor: true,
         },
       });
+      
       // -------------------- CREATE ASSET UNITS --------------------
       const assetUnits = [];
       for (let i = 0; i < totalUnits; i++) {
