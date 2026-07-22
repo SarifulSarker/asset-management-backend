@@ -8,7 +8,7 @@
     "stage": "dotenv -e ./configs/.env.stage -- node index.js",
     "dev": "dotenv -e ./configs/.env.dev -- nodemon index.js",
     "production": "dotenv -e ./configs/.env.production -- nodemon index.js",
-
+     
     "migrate:dev": "dotenv -e ./configs/.env.dev -- npx prisma migrate dev",
     "migrate:prod": "dotenv -e ./configs/.env.production -- npx prisma migrate deploy",
     "migrate:stage": "dotenv -e ./configs/.env.stage -- npx prisma migrate deploy",

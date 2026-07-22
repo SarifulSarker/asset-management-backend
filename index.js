@@ -20,7 +20,7 @@ console.log("DATABASE URL:", process.env.DATABASE_URL);
 app.use(
   cors({
     origin: true,
-    origin: ["https://asset-management-admin-panel-gkv2.vercel.app", "http://localhost:5173"],
+  //  origin: ["https://asset-management-admin-panel-gkv2.vercel.app", "http://localhost:5173"],
     credentials: true,
   }),
 );
