@@ -4,18 +4,18 @@ name: ${CONTAINER_NAME}
 services:
  
 
-  # db:
-  #   image: postgres:16
-  #   container_name: ${DB_CONTAINER_NAME}
+  db:
+    image: postgres:16
+    container_name: ${DB_CONTAINER_NAME}
     
-  #   environment:
-  #     POSTGRES_USER: ${DATABASE_USER}
-  #     POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-  #     POSTGRES_DB: ${DATABASE_NAME}
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   ports:
-  #     - "5434:5432"
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
 
   redis:
     image: redis:7
